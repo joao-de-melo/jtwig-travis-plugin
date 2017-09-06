@@ -31,12 +31,11 @@ public class TriggerBuildTask extends DefaultTask {
     public void trigger () {
         TravisExtension extension = TravisExtension.retrieve(project);
         TriggerTravisExtension triggerTravisExtension = TriggerTravisExtension.retrieve(project);
-        TriggerBuildService triggerBuildService = new TriggerBuildService(extension.travisApiUrl, HttpClients.createDefault());
+        TriggerBuildService triggerBuildService = new TriggerBuildService(extension.travisApiUrl, githubToken, HttpClients.createDefault());
         triggerBuildService.trigger(new TriggerBuildRequest(
                 project.name,
-                triggerTravisExtension.userOrg + "/" + triggerTravisExtension.repo,
-                extension.travisToken,
-                triggerTravisExtension.branch ?: "master",
+                triggerTravisExtension.userOrg + "/" + triggerTravisExtension.repo
+                ,
                 "Triggered from ${project.name} with message ${triggerTravisExtension.message}"
         ))
     }

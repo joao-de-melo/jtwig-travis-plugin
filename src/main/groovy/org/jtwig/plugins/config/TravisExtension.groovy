@@ -15,5 +15,5 @@ public class TravisExtension {
     }
 
     String travisApiUrl = "https://api.travis-ci.org"
-    String travisToken;
+    String githubToken;
 }

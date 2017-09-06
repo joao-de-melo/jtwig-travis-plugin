@@ -1,19 +1,44 @@
 package org.jtwig.plugins.travis;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
 import org.json.JSONObject;
 import org.jtwig.plugins.util.UrlBuilder;
 
+import java.io.IOException;
+
 public class TriggerBuildService {
     private final String baseUrl;
+    private final String githubToken;
     private final HttpClient httpClient;
 
-    public TriggerBuildService(String baseUrl, HttpClient httpClient) {
+    public TriggerBuildService(String baseUrl, String githubToken, HttpClient httpClient) {
         this.baseUrl = baseUrl;
+        this.githubToken = githubToken;
         this.httpClient = httpClient;
+    }
+
+    public String getToken () {
+        HttpPost httpPost = new HttpPost(String.format("%s/auth/github", baseUrl));
+        httpPost.addHeader("Travis-API-Version", "3");
+        httpPost.addHeader("Accept", "application/json");
+        httpPost.addHeader("Content-Type", "application/json");
+        httpPost.addHeader("User-Agent", "Travis");
+
+        httpPost.setEntity(new ByteArrayEntity(new JSONObject()
+                .put("github_token", githubToken)
+                .toString().getBytes()));
+        try {
+            HttpResponse response = httpClient.execute(httpPost);
+
+            return new JSONObject(IOUtils.toString(response.getEntity().getContent())).getString("access_token");
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot get auth token", e);
+        }
     }
 
     public void trigger(TriggerBuildRequest request) {
@@ -29,7 +54,7 @@ public class TriggerBuildService {
             post.addHeader("Travis-API-Version", "3");
             post.addHeader("Accept", "application/json");
             post.addHeader("Content-Type", "application/json");
-            post.addHeader("Authorization", String.format("token %s", request.getToken()));
+            post.addHeader("Authorization", String.format("token %s", getToken()));
 
             post.setEntity(entity);
 
