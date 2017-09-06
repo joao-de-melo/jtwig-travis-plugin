@@ -17,6 +17,5 @@ public class TriggerTravisExtension {
 
     String userOrg;
     String repo;
-    String branch = "master";
     String message;
 }

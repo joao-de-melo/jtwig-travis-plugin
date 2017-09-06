@@ -24,18 +24,23 @@ public class TriggerBuildService {
 
     public String getToken () {
         HttpPost httpPost = new HttpPost(String.format("%s/auth/github", baseUrl));
-        httpPost.addHeader("Travis-API-Version", "3");
         httpPost.addHeader("Accept", "application/json");
         httpPost.addHeader("Content-Type", "application/json");
         httpPost.addHeader("User-Agent", "Travis");
 
-        httpPost.setEntity(new ByteArrayEntity(new JSONObject()
+        String content = new JSONObject()
                 .put("github_token", githubToken)
-                .toString().getBytes()));
+                .toString();
+        httpPost.setEntity(new ByteArrayEntity(content.getBytes()));
         try {
             HttpResponse response = httpClient.execute(httpPost);
 
-            return new JSONObject(IOUtils.toString(response.getEntity().getContent())).getString("access_token");
+            String result = IOUtils.toString(response.getEntity().getContent());
+            try {
+                return new JSONObject(result).getString("access_token");
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to retrieve from "+result+content, e);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot get auth token", e);
         }
@@ -60,11 +65,11 @@ public class TriggerBuildService {
 
             response = httpClient.execute(post);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("Cannot trigger upstream project %s build", request.getProject()));
+            throw new RuntimeException(String.format("Cannot trigger upstream project %s build", request.getProject()), e);
         }
 
         if (response.getStatusLine().getStatusCode() < 200 || response.getStatusLine().getStatusCode() >= 300)
-            throw new RuntimeException(String.format("Cannot trigger upstream project %s build", request.getProject()));
+            throw new RuntimeException(String.format("Cannot trigger upstream project %s build. Response with status: %s", request.getProject(), response));
     }
 
     private String buildBody(TriggerBuildRequest request) {
